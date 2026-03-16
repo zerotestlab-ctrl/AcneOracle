@@ -40,6 +40,7 @@ export default function CameraScreen() {
   const insets = useSafeAreaInsets();
   const { addAnalysis } = useApp();
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [result, setResult] = useState<AnalysisResult | null>(null);
 
@@ -63,22 +64,23 @@ export default function CameraScreen() {
       }
     }
 
+    const pickerOptions: ImagePicker.ImagePickerOptions = {
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      quality: 0.8,
+      allowsEditing: true,
+      aspect: [1, 1] as [number, number],
+      base64: true,
+      skipProcessing: true,
+    };
+
     const result = await (fromCamera
-      ? ImagePicker.launchCameraAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          quality: 0.8,
-          allowsEditing: true,
-          aspect: [1, 1],
-        })
-      : ImagePicker.launchImageLibraryAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          quality: 0.8,
-          allowsEditing: true,
-          aspect: [1, 1],
-        }));
+      ? ImagePicker.launchCameraAsync(pickerOptions)
+      : ImagePicker.launchImageLibraryAsync(pickerOptions));
 
     if (!result.canceled && result.assets[0]) {
-      setImageUri(result.assets[0].uri);
+      const asset = result.assets[0];
+      setImageUri(asset.uri);
+      setImageBase64(asset.base64 ?? null);
       setResult(null);
     }
   };
@@ -89,19 +91,27 @@ export default function CameraScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
 
     try {
-      let base64 = "";
-      if (Platform.OS !== "web") {
-        base64 = await FileSystem.readAsStringAsync(imageUri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
-      } else {
-        const response = await fetch(imageUri);
-        const blob = await response.blob();
-        base64 = await new Promise<string>((resolve) => {
-          const reader = new FileReader();
-          reader.onload = () => resolve((reader.result as string).split(",")[1]);
-          reader.readAsDataURL(blob);
-        });
+      let base64 = imageBase64 ?? "";
+
+      // Fallback: if picker didn't return base64 (edge case), read from file
+      if (!base64) {
+        if (Platform.OS !== "web") {
+          base64 = await FileSystem.readAsStringAsync(imageUri, {
+            encoding: FileSystem.EncodingType.Base64,
+          });
+        } else {
+          const response = await fetch(imageUri);
+          const blob = await response.blob();
+          base64 = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve((reader.result as string).split(",")[1]);
+            reader.readAsDataURL(blob);
+          });
+        }
+      }
+
+      if (!base64) {
+        throw new Error("Could not read image data. Please try again.");
       }
 
       const apiResponse = await fetch(`${BASE_URL}/acne/analyze`, {
@@ -215,7 +225,7 @@ export default function CameraScreen() {
               {!analyzing && !result && (
                 <Pressable
                   style={styles.retakeBtn}
-                  onPress={() => { setImageUri(null); setResult(null); }}
+                  onPress={() => { setImageUri(null); setImageBase64(null); setResult(null); }}
                 >
                   <Ionicons name="refresh" size={18} color="#fff" />
                 </Pressable>
@@ -273,7 +283,7 @@ export default function CameraScreen() {
                   />
                   <Pressable
                     style={styles.scanAgainBtn}
-                    onPress={() => { setImageUri(null); setResult(null); }}
+                    onPress={() => { setImageUri(null); setImageBase64(null); setResult(null); }}
                   >
                     <Ionicons name="refresh" size={18} color={C.textSecondary} />
                   </Pressable>
