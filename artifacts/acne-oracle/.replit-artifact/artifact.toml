@@ -1,0 +1,27 @@
+kind = "mobile"
+previewPath = "/"
+title = "AcneOracle"
+version = "1.0.0"
+id = "artifacts/acne-oracle"
+router = "expo-domain"
+
+[[integratedSkills]]
+name = "expo"
+version = "1.0.0"
+
+[[services]]
+ensurePreviewReachable = "/status"
+localPort = 25787
+name = "expo"
+paths = ["/"]
+
+[services.development]
+run = "pnpm --filter @workspace/acne-oracle run dev"
+
+[services.env]
+PORT = "25787"
+BASE_PATH = "/"
+
+[services.production]
+build = ["pnpm", "--filter", "@workspace/acne-oracle", "run", "build"]
+run = ["pnpm", "--filter", "@workspace/acne-oracle", "run", "serve"]

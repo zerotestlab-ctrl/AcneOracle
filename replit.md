@@ -20,28 +20,80 @@ pnpm workspace monorepo using TypeScript. Each package manages its own dependenc
 
 ```text
 artifacts-monorepo/
-├── artifacts/              # Deployable applications
-│   └── api-server/         # Express API server
-├── lib/                    # Shared libraries
+├── artifacts/
+│   ├── api-server/         # Express API server (AI routes for AcneOracle)
+│   └── acne-oracle/        # React Native Expo iOS app
+├── lib/
 │   ├── api-spec/           # OpenAPI spec + Orval codegen config
 │   ├── api-client-react/   # Generated React Query hooks
-│   ├── api-zod/            # Generated Zod schemas from OpenAPI
-│   └── db/                 # Drizzle ORM schema + DB connection
-├── scripts/                # Utility scripts (single workspace package)
-│   └── src/                # Individual .ts scripts, run via `pnpm --filter @workspace/scripts run <script>`
-├── pnpm-workspace.yaml     # pnpm workspace (artifacts/*, lib/*, lib/integrations/*, scripts)
-├── tsconfig.base.json      # Shared TS options (composite, bundler resolution, es2022)
-├── tsconfig.json           # Root TS project references
-└── package.json            # Root package with hoisted devDeps
+│   ├── api-zod/            # Generated Zod schemas
+│   ├── db/                 # Drizzle ORM schema + DB connection
+│   └── integrations-openai-ai-server/  # OpenAI server SDK wrapper
+├── scripts/                # Utility scripts
+├── pnpm-workspace.yaml
+├── tsconfig.base.json
+├── tsconfig.json
+└── package.json
 ```
+
+## AcneOracle App (artifacts/acne-oracle)
+
+React Native Expo iOS app for AI-powered acne analysis.
+
+### Features
+- Guided camera skin selfies via ImagePicker
+- AI acne type detection (comedonal/inflammatory/cystic/hormonal) + severity scoring 1-5
+- Product spending log with category tracking and budget progress bar
+- Weekly dashboard with severity trend chart, photo timeline, smart swaps
+- AI chat coach with SSE streaming (expo/fetch)
+- Before/after skin simulation (gpt-image-1)
+- RevenueCat subscription paywall ($5.99/mo) — gracefully disabled without API key
+- Dark mode only (#080B10 background, #FF6B6B coral accent, #00C9A7 teal)
+
+### Key Files
+- `app/_layout.tsx` — root layout with all providers
+- `app/(tabs)/index.tsx` — Home screen (stats, scan CTA, tips)
+- `app/(tabs)/log.tsx` — Product log with add modal
+- `app/(tabs)/dashboard.tsx` — Progress charts, photo timeline, spending breakdown
+- `app/(tabs)/community.tsx` — AI chat coach with SSE streaming
+- `app/camera.tsx` — Camera/image picker + analysis flow
+- `app/results.tsx` — Analysis history sidebar + detail view + simulation
+- `app/paywall.tsx` — RevenueCat subscription paywall
+- `context/AppContext.tsx` — Global state (AsyncStorage: analyses, products, chat, streak)
+- `lib/revenuecat.tsx` — SubscriptionProvider, gracefully disabled without key
+- `constants/colors.ts` — Dark theme colors
+
+### IDs
+Use `Date.now().toString() + Math.random().toString(36).slice(2,7)` for IDs (no uuid package).
+
+### Bundle identifier
+`com.acneoracle.app`
+
+## API Server (artifacts/api-server)
+
+Express 5 API server. Mounts at `/api`.
+
+### Routes
+- `GET /api/health` — health check
+- `POST /api/acne/analyze` — gpt-5.2 vision acne analysis (returns JSON)
+- `POST /api/acne/simulate` — gpt-image-1 before/after simulation (returns b64)
+- `POST /api/acne/chat` — SSE streaming chat coach
+
+Depends on: `@workspace/integrations-openai-ai-server`
+
+## RevenueCat Setup (pending)
+- Connector: `connector:ccfg_revenuecat_01KED80FZSMH99H5FHQWSX7D4M`
+- Entitlement: `premium`
+- Price: $5.99/mo
+- Env vars needed: `EXPO_PUBLIC_REVENUECAT_TEST_API_KEY`, `EXPO_PUBLIC_REVENUECAT_IOS_API_KEY`
 
 ## TypeScript & Composite Projects
 
 Every package extends `tsconfig.base.json` which sets `composite: true`. The root `tsconfig.json` lists all packages as project references. This means:
 
-- **Always typecheck from the root** — run `pnpm run typecheck` (which runs `tsc --build --emitDeclarationOnly`). This builds the full dependency graph so that cross-package imports resolve correctly. Running `tsc` inside a single package will fail if its dependencies haven't been built yet.
-- **`emitDeclarationOnly`** — we only emit `.d.ts` files during typecheck; actual JS bundling is handled by esbuild/tsx/vite...etc, not `tsc`.
-- **Project references** — when package A depends on package B, A's `tsconfig.json` must list B in its `references` array. `tsc --build` uses this to determine build order and skip up-to-date packages.
+- **Always typecheck from the root** — run `pnpm run typecheck` (which runs `tsc --build --emitDeclarationOnly`). This builds the full dependency graph so that cross-package imports resolve correctly.
+- **`emitDeclarationOnly`** — we only emit `.d.ts` files during typecheck.
+- **Project references** — when package A depends on package B, A's `tsconfig.json` must list B in its `references` array.
 
 ## Root Scripts
 
@@ -56,41 +108,17 @@ Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` 
 
 - Entry: `src/index.ts` — reads `PORT`, starts Express
 - App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
-- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /health` (full path: `/api/health`)
-- Depends on: `@workspace/db`, `@workspace/api-zod`
-- `pnpm --filter @workspace/api-server run dev` — run the dev server
-- `pnpm --filter @workspace/api-server run build` — production esbuild bundle (`dist/index.cjs`)
-- Build bundles an allowlist of deps (express, cors, pg, drizzle-orm, zod, etc.) and externalizes the rest
+- Routes: `src/routes/index.ts` mounts sub-routers; acne routes at `src/routes/acne/index.ts`
+- Depends on: `@workspace/db`, `@workspace/api-zod`, `@workspace/integrations-openai-ai-server`
 
 ### `lib/db` (`@workspace/db`)
 
 Database layer using Drizzle ORM with PostgreSQL. Exports a Drizzle client instance and schema models.
 
-- `src/index.ts` — creates a `Pool` + Drizzle instance, exports schema
-- `src/schema/index.ts` — barrel re-export of all models
-- `src/schema/<modelname>.ts` — table definitions with `drizzle-zod` insert schemas (no models definitions exist right now)
-- `drizzle.config.ts` — Drizzle Kit config (requires `DATABASE_URL`, automatically provided by Replit)
-- Exports: `.` (pool, db, schema), `./schema` (schema only)
-
-Production migrations are handled by Replit when publishing. In development, we just use `pnpm --filter @workspace/db run push`, and we fallback to `pnpm --filter @workspace/db run push-force`.
-
 ### `lib/api-spec` (`@workspace/api-spec`)
 
-Owns the OpenAPI 3.1 spec (`openapi.yaml`) and the Orval config (`orval.config.ts`). Running codegen produces output into two sibling packages:
-
-1. `lib/api-client-react/src/generated/` — React Query hooks + fetch client
-2. `lib/api-zod/src/generated/` — Zod schemas
-
-Run codegen: `pnpm --filter @workspace/api-spec run codegen`
-
-### `lib/api-zod` (`@workspace/api-zod`)
-
-Generated Zod schemas from the OpenAPI spec (e.g. `HealthCheckResponse`). Used by `api-server` for response validation.
-
-### `lib/api-client-react` (`@workspace/api-client-react`)
-
-Generated React Query hooks and fetch client from the OpenAPI spec (e.g. `useHealthCheck`, `healthCheck`).
+Owns the OpenAPI 3.1 spec (`openapi.yaml`) and the Orval config (`orval.config.ts`).
 
 ### `scripts` (`@workspace/scripts`)
 
-Utility scripts package. Each script is a `.ts` file in `src/` with a corresponding npm script in `package.json`. Run scripts via `pnpm --filter @workspace/scripts run <script>`. Scripts can import any workspace package (e.g., `@workspace/db`) by adding it as a dependency in `scripts/package.json`.
+Utility scripts package.

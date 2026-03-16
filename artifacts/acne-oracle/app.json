@@ -1,0 +1,48 @@
+{
+  "expo": {
+    "name": "AcneOracle",
+    "slug": "acne-oracle",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "acne-oracle",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#080B10"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.acneoracle.app"
+    },
+    "android": {
+      "package": "com.acneoracle.app"
+    },
+    "web": {
+      "favicon": "./assets/images/icon.png"
+    },
+    "plugins": [
+      [
+        "expo-router",
+        {
+          "origin": "https://replit.com/"
+        }
+      ],
+      "expo-font",
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "AcneOracle needs access to your photos to analyze your skin.",
+          "cameraPermission": "AcneOracle needs camera access to take skin selfies for analysis."
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
