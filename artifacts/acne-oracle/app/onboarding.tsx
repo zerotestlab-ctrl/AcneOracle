@@ -25,12 +25,12 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { GradientButton } from "@/components/ui/GradientButton";
 import Colors from "@/constants/colors";
-import { useApp, type AcneVariant, type SkinTone, type UserProfile } from "@/context/AppContext";
+import { useApp, type AcneTrigger, type AcneVariant, type SkinTone, type UserProfile } from "@/context/AppContext";
 
 const C = Colors.dark;
 const { width } = Dimensions.get("window");
 
-const QUESTION_STEPS = 7;
+const QUESTION_STEPS = 8;
 
 const SKIN_TONES: { id: SkinTone; label: string; hex: string; subLabel: string }[] = [
   { id: "fair",   label: "Fair",   hex: "#F8D5B8", subLabel: "Very light, burns easily" },
@@ -79,6 +79,20 @@ const SPEND_OPTIONS = [
   { label: "$600+",       value: 750, emoji: "😱" },
 ];
 
+const TRIGGER_OPTIONS: { id: AcneTrigger; label: string; emoji: string }[] = [
+  { id: "stress",            label: "Stress",             emoji: "😰" },
+  { id: "diet",              label: "Diet / Junk Food",   emoji: "🍕" },
+  { id: "hormones",          label: "Hormones / Cycle",   emoji: "🔄" },
+  { id: "sleep",             label: "Poor Sleep",         emoji: "😴" },
+  { id: "dairy",             label: "Dairy",              emoji: "🥛" },
+  { id: "sugar",             label: "Sugar",              emoji: "🍬" },
+  { id: "sweat",             label: "Sweat / Exercise",   emoji: "🏋️" },
+  { id: "touching_face",     label: "Touching My Face",   emoji: "✋" },
+  { id: "skincare_products", label: "Skincare Products",  emoji: "🧴" },
+  { id: "pollution",         label: "Pollution / City",   emoji: "🌆" },
+  { id: "not_sure",          label: "I'm not sure yet",   emoji: "🤷" },
+];
+
 function ProgressBar({ step }: { step: number }) {
   return (
     <View style={styles.progressContainer}>
@@ -100,13 +114,14 @@ export default function OnboardingScreen() {
   const { completeOnboarding } = useApp();
   const scrollRef = useRef<ScrollView>(null);
 
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(1);
   const [nickname, setNickname] = useState("");
   const [age, setAge] = useState<string | null>(null);
   const [skinTone, setSkinTone] = useState<SkinTone | null>(null);
   const [acneTypes, setAcneTypes] = useState<AcneVariant[]>([]);
   const [yearsWithAcne, setYearsWithAcne] = useState<number | null>(null);
   const [mainFrustration, setMainFrustration] = useState<string | null>(null);
+  const [suspectedTriggers, setSuspectedTriggers] = useState<AcneTrigger[]>([]);
   const [currentCream, setCurrentCream] = useState("");
   const [annualSpend, setAnnualSpend] = useState<number | null>(null);
   const [selfieUri, setSelfieUri] = useState<string | null>(null);
@@ -117,14 +132,14 @@ export default function OnboardingScreen() {
   const botPad = Platform.OS === "web" ? 24 : insets.bottom;
 
   const canProceed = () => {
-    if (step === 0) return true;
-    if (step === 1) return nickname.trim().length >= 1;
+    if (step === 1) return nickname.trim().length >= 2;
     if (step === 2) return age !== null;
     if (step === 3) return skinTone !== null;
     if (step === 4) return acneTypes.length >= 1;
     if (step === 5) return yearsWithAcne !== null && mainFrustration !== null;
-    if (step === 6) return currentCream.trim().length >= 1 && annualSpend !== null;
-    if (step === 7) return selfieUri !== null;
+    if (step === 6) return suspectedTriggers.length >= 1;
+    if (step === 7) return annualSpend !== null;
+    if (step === 8) return selfieUri !== null;
     return false;
   };
 
@@ -145,7 +160,7 @@ export default function OnboardingScreen() {
   };
 
   const handleBack = () => {
-    if (step > 0) {
+    if (step > 1) {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setStep((s) => s - 1);
       setTimeout(() => scrollRef.current?.scrollTo({ y: 0, animated: false }), 50);
@@ -153,7 +168,7 @@ export default function OnboardingScreen() {
   };
 
   const handleComplete = async () => {
-    if (!nickname || !age || !skinTone || acneTypes.length === 0 || yearsWithAcne === null || !mainFrustration || !currentCream || annualSpend === null) return;
+    if (!nickname || !age || !skinTone || acneTypes.length === 0 || yearsWithAcne === null || !mainFrustration || annualSpend === null) return;
     setCompleting(true);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
@@ -164,6 +179,7 @@ export default function OnboardingScreen() {
       acneTypes,
       yearsWithAcne,
       mainFrustration,
+      suspectedTriggers,
       currentCream: currentCream.trim(),
       annualSpend,
     };
@@ -212,66 +228,8 @@ export default function OnboardingScreen() {
   return (
     <View style={[styles.root, { backgroundColor: C.background }]}>
 
-      {/* ── Step 0: Landing ── */}
-      {step === 0 && (
-        <Animated.View
-          entering={FadeIn.springify()}
-          style={[styles.landingContainer, { paddingTop: topPad + 20, paddingBottom: botPad + 24 }]}
-        >
-          <LinearGradient
-            colors={["#FF6B6B12", "#00C9A708", C.background]}
-            locations={[0, 0.45, 1]}
-            style={StyleSheet.absoluteFill}
-          />
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.landingScroll}
-          >
-            <LinearGradient colors={C.accentGradient} style={styles.landingIcon}>
-              <Ionicons name="sparkles" size={44} color="#fff" />
-            </LinearGradient>
-
-            <Text style={styles.landingTitle}>Welcome to AcneOracle</Text>
-            <Text style={styles.landingBody}>
-              Your personal AI skin coach. I analyse your acne photos, track exactly what you spend on products, and give warm, honest advice on better routines, food, and smarter spending to finally clear your skin.
-            </Text>
-            <Text style={styles.landingBody}>
-              No fluff, just real help.
-            </Text>
-
-            <View style={styles.landingFeatures}>
-              {[
-                { icon: "scan-outline",   text: "AI acne photo analysis — every scan" },
-                { icon: "wallet-outline", text: "Track spending & find smarter swaps" },
-                { icon: "heart-outline",  text: "Warm, honest advice tailored to you" },
-                { icon: "trending-up",    text: "Weekly progress dashboard & streaks" },
-              ].map((f, i) => (
-                <Animated.View
-                  key={i}
-                  entering={FadeInDown.delay(200 + i * 80).springify()}
-                  style={styles.featureRow}
-                >
-                  <View style={styles.featureIconBg}>
-                    <Ionicons name={f.icon as any} size={18} color={C.accent} />
-                  </View>
-                  <Text style={styles.featureText}>{f.text}</Text>
-                </Animated.View>
-              ))}
-            </View>
-
-            <Text style={styles.landingDisclaimer}>
-              Wellness coach only · Not a medical doctor
-            </Text>
-          </ScrollView>
-
-          <View style={[styles.landingActions, { paddingBottom: botPad + 8 }]}>
-            <GradientButton label="Get Started" onPress={handleNext} size="lg" />
-          </View>
-        </Animated.View>
-      )}
-
-      {/* ── Steps 1–7 ── */}
-      {step > 0 && (
+      {/* ── Steps 1–8 ── */}
+      {step >= 1 && (
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={{ flex: 1 }}
@@ -475,8 +433,50 @@ export default function OnboardingScreen() {
                 </Animated.View>
               )}
 
-              {/* ── Step 6: Cream + spending ── */}
+              {/* ── Step 6: Suspected triggers ── */}
               {step === 6 && (
+                <Animated.View entering={SlideInRight.springify()} style={styles.stepContent}>
+                  <Text style={styles.stepEmoji}>🔍</Text>
+                  <Text style={styles.stepTitle}>What do you think triggers your breakouts?</Text>
+                  <Text style={styles.stepSubtitle}>
+                    Select everything that feels related. You can always update this later as we learn more together.
+                  </Text>
+                  <View style={styles.chipGrid}>
+                    {TRIGGER_OPTIONS.map((t) => {
+                      const active = suspectedTriggers.includes(t.id);
+                      return (
+                        <Pressable
+                          key={t.id}
+                          style={[styles.chip, active && styles.chipActive]}
+                          onPress={() => {
+                            Haptics.selectionAsync();
+                            setSuspectedTriggers((prev) =>
+                              prev.includes(t.id)
+                                ? prev.filter((x) => x !== t.id)
+                                : [...prev, t.id]
+                            );
+                          }}
+                        >
+                          <Text style={[styles.chipText, active && styles.chipTextActive]}>
+                            {t.emoji} {t.label}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                  {suspectedTriggers.length > 0 && (
+                    <Animated.View entering={FadeIn.springify()} style={styles.empathyCard}>
+                      <Ionicons name="information-circle-outline" size={16} color={C.teal} />
+                      <Text style={[styles.empathyText, { flex: 1 }]}>
+                        Good to know. I'll factor these into every recommendation I make for you.
+                      </Text>
+                    </Animated.View>
+                  )}
+                </Animated.View>
+              )}
+
+              {/* ── Step 7: Cream + spending ── */}
+              {step === 7 && (
                 <Animated.View entering={SlideInRight.springify()} style={styles.stepContent}>
                   <Text style={styles.stepEmoji}>💊</Text>
                   <Text style={styles.stepTitle}>What's the main cream or serum you're using right now?</Text>
@@ -523,8 +523,8 @@ export default function OnboardingScreen() {
                 </Animated.View>
               )}
 
-              {/* ── Step 7: Selfie ── */}
-              {step === 7 && (
+              {/* ── Step 8: Selfie ── */}
+              {step === 8 && (
                 <Animated.View entering={SlideInRight.springify()} style={styles.stepContent}>
                   <Text style={styles.stepEmoji}>📸</Text>
                   <Text style={styles.stepTitle}>Time to meet your skin!</Text>

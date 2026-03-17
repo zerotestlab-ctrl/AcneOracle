@@ -38,7 +38,7 @@ const TIPS = [
 
 export default function CameraScreen() {
   const insets = useSafeAreaInsets();
-  const { addAnalysis } = useApp();
+  const { addAnalysis, userProfile } = useApp();
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [imageBase64, setImageBase64] = useState<string | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
@@ -117,7 +117,7 @@ export default function CameraScreen() {
       const apiResponse = await fetch(`${BASE_URL}/acne/analyze`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ image: base64 }),
+        body: JSON.stringify({ image: base64, userProfile: userProfile ?? undefined }),
       });
 
       if (!apiResponse.ok) throw new Error("Analysis failed");

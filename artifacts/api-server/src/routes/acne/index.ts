@@ -10,6 +10,7 @@ interface UserProfile {
   acneTypes?: string[];
   yearsWithAcne: number;
   mainFrustration?: string;
+  suspectedTriggers?: string[];
   currentCream: string;
   annualSpend: number;
 }
@@ -18,7 +19,8 @@ function buildProfileContext(p: UserProfile): string {
   const types = p.acneTypes?.join(", ") || "general";
   const frustration = p.mainFrustration ? `Their main frustration is: "${p.mainFrustration}".` : "";
   const age = p.age ? `Age group: ${p.age}.` : "";
-  return `User: ${p.nickname}. ${age} Skin tone: ${p.skinTone}. Acne types: ${types}. Fighting acne for ${p.yearsWithAcne} year(s). ${frustration} Current main product: "${p.currentCream}". Annual skincare spend: $${p.annualSpend}.`;
+  const triggers = p.suspectedTriggers?.length ? `Suspected triggers: ${p.suspectedTriggers.join(", ")}.` : "";
+  return `User: ${p.nickname}. ${age} Skin tone: ${p.skinTone}. Acne types: ${types}. Fighting acne for ${p.yearsWithAcne} year(s). ${frustration} ${triggers} Current main product: "${p.currentCream}". Annual skincare spend: $${p.annualSpend}.`;
 }
 
 router.post("/analyze", async (req, res) => {
@@ -39,7 +41,7 @@ router.post("/analyze", async (req, res) => {
 
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4o-mini",
       max_completion_tokens: 2048,
       messages: [
         {
@@ -129,7 +131,7 @@ router.post("/welcome", async (req, res) => {
 
   try {
     const stream = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4o-mini",
       max_completion_tokens: 350,
       stream: true,
       messages: [
@@ -230,7 +232,7 @@ Rules for every reply:
     ];
 
     const stream = await openai.chat.completions.create({
-      model: "gpt-4o",
+      model: "gpt-4o-mini",
       max_completion_tokens: 1024,
       messages,
       stream: true,

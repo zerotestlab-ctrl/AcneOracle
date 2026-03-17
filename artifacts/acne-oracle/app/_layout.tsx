@@ -24,18 +24,23 @@ const queryClient = new QueryClient();
 initializeRevenueCat();
 
 function NavigationGuard() {
-  const { onboardingComplete, isLoaded } = useApp();
+  const { hasSeenIntro, onboardingComplete, isLoaded } = useApp();
   const segments = useSegments();
 
   useEffect(() => {
     if (!isLoaded) return;
+    const inIntro = segments[0] === "intro";
     const inOnboarding = segments[0] === "onboarding";
     const inWelcome = segments[0] === "welcome";
 
-    if (!onboardingComplete && !inOnboarding && !inWelcome) {
+    if (!hasSeenIntro && !inIntro) {
+      router.replace("/intro");
+      return;
+    }
+    if (hasSeenIntro && !onboardingComplete && !inOnboarding && !inWelcome && !inIntro) {
       router.replace("/onboarding");
     }
-  }, [isLoaded, onboardingComplete, segments]);
+  }, [isLoaded, hasSeenIntro, onboardingComplete, segments]);
 
   return null;
 }
@@ -46,6 +51,7 @@ function RootLayoutNav() {
       <NavigationGuard />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="intro" options={{ headerShown: false, gestureEnabled: false }} />
         <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
         <Stack.Screen name="welcome" options={{ headerShown: false, gestureEnabled: false }} />
         <Stack.Screen name="camera" options={{ presentation: "fullScreenModal", headerShown: false }} />

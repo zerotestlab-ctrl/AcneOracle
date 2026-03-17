@@ -7,6 +7,19 @@ import React, {
   useState,
 } from "react";
 
+export type AcneTrigger =
+  | "stress"
+  | "diet"
+  | "hormones"
+  | "sleep"
+  | "dairy"
+  | "sugar"
+  | "sweat"
+  | "touching_face"
+  | "skincare_products"
+  | "pollution"
+  | "not_sure";
+
 export type AcneType =
   | "comedonal"
   | "inflammatory"
@@ -40,6 +53,7 @@ export interface UserProfile {
   acneTypes: AcneVariant[];
   yearsWithAcne: number;
   mainFrustration: string;
+  suspectedTriggers: AcneTrigger[];
   currentCream: string;
   annualSpend: number;
 }
@@ -76,6 +90,7 @@ export interface ChatMessage {
 }
 
 interface AppState {
+  hasSeenIntro: boolean;
   userProfile: UserProfile | null;
   onboardingComplete: boolean;
   analyses: AnalysisResult[];
@@ -87,6 +102,7 @@ interface AppState {
 }
 
 interface AppContextValue extends AppState {
+  markIntroSeen: () => Promise<void>;
   completeOnboarding: (profile: UserProfile) => Promise<void>;
   resetOnboarding: () => Promise<void>;
   addAnalysis: (analysis: AnalysisResult) => Promise<void>;
@@ -102,9 +118,10 @@ interface AppContextValue extends AppState {
 
 const AppContext = createContext<AppContextValue | null>(null);
 
-const STORAGE_KEY = "acneoracle_data_v3";
+const STORAGE_KEY = "acneoracle_data_v4";
 
 const DEFAULT_STATE: AppState = {
+  hasSeenIntro: false,
   userProfile: null,
   onboardingComplete: false,
   analyses: [],
@@ -136,9 +153,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   }, []);
 
+  const markIntroSeen = useCallback(async () => {
+    await persist({ ...state, hasSeenIntro: true });
+  }, [state, persist]);
+
   const completeOnboarding = useCallback(
     async (profile: UserProfile) => {
-      await persist({ ...state, userProfile: profile, onboardingComplete: true });
+      await persist({ ...state, userProfile: profile, onboardingComplete: true, hasSeenIntro: true });
     },
     [state, persist],
   );
@@ -213,6 +234,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <AppContext.Provider
       value={{
         ...state,
+        markIntroSeen,
         completeOnboarding,
         resetOnboarding,
         addAnalysis,
