@@ -132,6 +132,7 @@ export default function WelcomeScreen() {
         alternativeProducts: Array.isArray(data.alternativeProducts) ? data.alternativeProducts : [],
         routine: Array.isArray(data.routine) ? data.routine : [],
         personalizedInsight: data.personalizedInsight ?? "",
+        spendingCritique: data.spendingCritique ?? "",
       };
 
       await addAnalysis(analysis);
@@ -214,6 +215,13 @@ export default function WelcomeScreen() {
               <View style={styles.insightCard}>
                 <Ionicons name="sparkles" size={16} color={C.accent} />
                 <Text style={styles.insightText}>{analysisResult.personalizedInsight}</Text>
+              </View>
+            ) : null}
+
+            {analysisResult.spendingCritique ? (
+              <View style={styles.spendCard}>
+                <Ionicons name="wallet-outline" size={16} color="#FF8E53" />
+                <Text style={styles.spendCritiqueText}>{analysisResult.spendingCritique}</Text>
               </View>
             ) : null}
 
@@ -305,6 +313,14 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: C.accent + "30",
   },
   insightText: { fontFamily: "Inter_400Regular", fontSize: 14, color: C.text, flex: 1, lineHeight: 21 },
+  spendCard: {
+    flexDirection: "row", gap: 10, alignItems: "flex-start",
+    backgroundColor: "#FF8E5312", borderRadius: 14, padding: 14,
+    borderWidth: 1, borderColor: "#FF8E5330",
+  },
+  spendCritiqueText: {
+    fontFamily: "Inter_400Regular", fontSize: 14, color: "#FF8E53", flex: 1, lineHeight: 21,
+  },
   analysisDesc: { fontFamily: "Inter_400Regular", fontSize: 14, color: C.textSecondary, lineHeight: 21 },
   recSection: { gap: 10 },
   recTitle: { fontFamily: "Inter_600SemiBold", fontSize: 14, color: C.text },

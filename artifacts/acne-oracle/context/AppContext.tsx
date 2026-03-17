@@ -25,10 +25,21 @@ export type SkinTone =
   | "brown"
   | "deep";
 
+export type AcneVariant =
+  | "comedonal"
+  | "inflammatory"
+  | "cystic"
+  | "hormonal"
+  | "body"
+  | "mixed";
+
 export interface UserProfile {
   nickname: string;
+  age: string;
   skinTone: SkinTone;
+  acneTypes: AcneVariant[];
   yearsWithAcne: number;
+  mainFrustration: string;
   currentCream: string;
   annualSpend: number;
 }
@@ -45,6 +56,7 @@ export interface AnalysisResult {
   alternativeProducts: string[];
   routine: string[];
   personalizedInsight?: string;
+  spendingCritique?: string;
 }
 
 export interface SkincareProduct {
@@ -90,7 +102,7 @@ interface AppContextValue extends AppState {
 
 const AppContext = createContext<AppContextValue | null>(null);
 
-const STORAGE_KEY = "acneoracle_data_v2";
+const STORAGE_KEY = "acneoracle_data_v3";
 
 const DEFAULT_STATE: AppState = {
   userProfile: null,
