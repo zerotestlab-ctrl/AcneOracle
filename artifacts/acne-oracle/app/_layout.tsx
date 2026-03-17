@@ -6,7 +6,7 @@ import {
   useFonts,
 } from "@expo-google-fonts/inter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Stack } from "expo-router";
+import { Stack, router, useSegments } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import React, { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -14,7 +14,7 @@ import { KeyboardProvider } from "react-native-keyboard-controller";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { AppProvider } from "@/context/AppContext";
+import { AppProvider, useApp } from "@/context/AppContext";
 import { SubscriptionProvider, initializeRevenueCat } from "@/lib/revenuecat";
 
 SplashScreen.preventAutoHideAsync();
@@ -23,23 +23,36 @@ const queryClient = new QueryClient();
 
 initializeRevenueCat();
 
+function NavigationGuard() {
+  const { onboardingComplete, isLoaded } = useApp();
+  const segments = useSegments();
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    const inOnboarding = segments[0] === "onboarding";
+    const inWelcome = segments[0] === "welcome";
+
+    if (!onboardingComplete && !inOnboarding && !inWelcome) {
+      router.replace("/onboarding");
+    }
+  }, [isLoaded, onboardingComplete, segments]);
+
+  return null;
+}
+
 function RootLayoutNav() {
   return (
-    <Stack screenOptions={{ headerShown: false }}>
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-      <Stack.Screen
-        name="camera"
-        options={{ presentation: "fullScreenModal", headerShown: false }}
-      />
-      <Stack.Screen
-        name="results"
-        options={{ presentation: "modal", headerShown: false }}
-      />
-      <Stack.Screen
-        name="paywall"
-        options={{ presentation: "modal", headerShown: false }}
-      />
-    </Stack>
+    <>
+      <NavigationGuard />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen name="onboarding" options={{ headerShown: false, gestureEnabled: false }} />
+        <Stack.Screen name="welcome" options={{ headerShown: false, gestureEnabled: false }} />
+        <Stack.Screen name="camera" options={{ presentation: "fullScreenModal", headerShown: false }} />
+        <Stack.Screen name="results" options={{ presentation: "modal", headerShown: false }} />
+        <Stack.Screen name="paywall" options={{ presentation: "modal", headerShown: false }} />
+      </Stack>
+    </>
   );
 }
 

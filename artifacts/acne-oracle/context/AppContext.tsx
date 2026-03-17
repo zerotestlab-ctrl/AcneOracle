@@ -17,6 +17,22 @@ export type AcneType =
 
 export type SeverityLevel = 1 | 2 | 3 | 4 | 5;
 
+export type SkinTone =
+  | "fair"
+  | "light"
+  | "medium"
+  | "olive"
+  | "brown"
+  | "deep";
+
+export interface UserProfile {
+  nickname: string;
+  skinTone: SkinTone;
+  yearsWithAcne: number;
+  currentCream: string;
+  annualSpend: number;
+}
+
 export interface AnalysisResult {
   id: string;
   date: string;
@@ -28,6 +44,7 @@ export interface AnalysisResult {
   triggerProducts: string[];
   alternativeProducts: string[];
   routine: string[];
+  personalizedInsight?: string;
 }
 
 export interface SkincareProduct {
@@ -47,6 +64,8 @@ export interface ChatMessage {
 }
 
 interface AppState {
+  userProfile: UserProfile | null;
+  onboardingComplete: boolean;
   analyses: AnalysisResult[];
   products: SkincareProduct[];
   chatHistory: ChatMessage[];
@@ -56,6 +75,8 @@ interface AppState {
 }
 
 interface AppContextValue extends AppState {
+  completeOnboarding: (profile: UserProfile) => Promise<void>;
+  resetOnboarding: () => Promise<void>;
   addAnalysis: (analysis: AnalysisResult) => Promise<void>;
   addProduct: (product: Omit<SkincareProduct, "id" | "addedDate">) => Promise<void>;
   removeProduct: (id: string) => Promise<void>;
@@ -64,30 +85,37 @@ interface AppContextValue extends AppState {
   setIsPremium: (val: boolean) => void;
   monthlySpend: number;
   latestAnalysis: AnalysisResult | null;
+  isLoaded: boolean;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
 
-const STORAGE_KEY = "acneoracle_data_v1";
+const STORAGE_KEY = "acneoracle_data_v2";
+
+const DEFAULT_STATE: AppState = {
+  userProfile: null,
+  onboardingComplete: false,
+  analyses: [],
+  products: [],
+  chatHistory: [],
+  streak: 0,
+  lastAnalysisDate: null,
+  isPremium: false,
+};
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [state, setState] = useState<AppState>({
-    analyses: [],
-    products: [],
-    chatHistory: [],
-    streak: 0,
-    lastAnalysisDate: null,
-    isPremium: false,
-  });
+  const [state, setState] = useState<AppState>(DEFAULT_STATE);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY).then((raw) => {
       if (raw) {
         try {
           const parsed = JSON.parse(raw) as AppState;
-          setState(parsed);
+          setState({ ...DEFAULT_STATE, ...parsed });
         } catch {}
       }
+      setIsLoaded(true);
     });
   }, []);
 
@@ -96,14 +124,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next));
   }, []);
 
+  const completeOnboarding = useCallback(
+    async (profile: UserProfile) => {
+      await persist({ ...state, userProfile: profile, onboardingComplete: true });
+    },
+    [state, persist],
+  );
+
+  const resetOnboarding = useCallback(async () => {
+    await persist({ ...DEFAULT_STATE });
+  }, [persist]);
+
   const addAnalysis = useCallback(
     async (analysis: AnalysisResult) => {
       const today = new Date().toDateString();
       const newStreak =
         state.lastAnalysisDate === today
           ? state.streak
-          : state.lastAnalysisDate ===
-              new Date(Date.now() - 86400000).toDateString()
+          : state.lastAnalysisDate === new Date(Date.now() - 86400000).toDateString()
             ? state.streak + 1
             : 1;
 
@@ -131,10 +169,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const removeProduct = useCallback(
     async (id: string) => {
-      await persist({
-        ...state,
-        products: state.products.filter((p) => p.id !== id),
-      });
+      await persist({ ...state, products: state.products.filter((p) => p.id !== id) });
     },
     [state, persist],
   );
@@ -146,10 +181,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         id: Date.now().toString() + Math.random().toString(36).slice(2, 7),
         timestamp: new Date().toISOString(),
       };
-      await persist({
-        ...state,
-        chatHistory: [...state.chatHistory, newMsg].slice(-100),
-      });
+      await persist({ ...state, chatHistory: [...state.chatHistory, newMsg].slice(-100) });
     },
     [state, persist],
   );
@@ -158,12 +190,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     await persist({ ...state, chatHistory: [] });
   }, [state, persist]);
 
-  const setIsPremium = useCallback(
-    (val: boolean) => {
-      setState((s) => ({ ...s, isPremium: val }));
-    },
-    [],
-  );
+  const setIsPremium = useCallback((val: boolean) => {
+    setState((s) => ({ ...s, isPremium: val }));
+  }, []);
 
   const monthlySpend = state.products.reduce((sum, p) => sum + p.cost, 0);
   const latestAnalysis = state.analyses[0] ?? null;
@@ -172,6 +201,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     <AppContext.Provider
       value={{
         ...state,
+        completeOnboarding,
+        resetOnboarding,
         addAnalysis,
         addProduct,
         removeProduct,
@@ -180,6 +211,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         setIsPremium,
         monthlySpend,
         latestAnalysis,
+        isLoaded,
       }}
     >
       {children}

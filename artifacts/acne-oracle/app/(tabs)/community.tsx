@@ -63,7 +63,7 @@ function TypingIndicator() {
 
 export default function CommunityScreen() {
   const insets = useSafeAreaInsets();
-  const { chatHistory, addChatMessage, clearChat } = useApp();
+  const { chatHistory, addChatMessage, clearChat, userProfile } = useApp();
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [streamingContent, setStreamingContent] = useState("");
@@ -99,7 +99,7 @@ export default function CommunityScreen() {
       const response = await fetch(`${BASE_URL}/acne/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: msg, history }),
+        body: JSON.stringify({ message: msg, history, userProfile }),
       });
 
       if (!response.ok || !response.body) throw new Error("Chat failed");
@@ -173,9 +173,13 @@ export default function CommunityScreen() {
               <LinearGradient colors={C.tealGradient} style={styles.emptyAvatar}>
                 <Ionicons name="sparkles" size={32} color="#fff" />
               </LinearGradient>
-              <Text style={styles.emptyTitle}>Your AI Skin Coach</Text>
+              <Text style={styles.emptyTitle}>
+                {userProfile ? `Hey ${userProfile.nickname}! 👋` : "Your AI Skin Coach"}
+              </Text>
               <Text style={styles.emptySubtitle}>
-                Ask me anything about acne, skincare routines, ingredients, or products. I'm here to help you get clearer skin.
+                {userProfile
+                  ? `Ask me anything about your ${userProfile.skinTone} skin, your "${userProfile.currentCream}", or anything acne-related.`
+                  : "Ask me anything about acne, skincare routines, ingredients, or products. I'm here to help you get clearer skin."}
               </Text>
               <Text style={styles.disclaimerText}>
                 Wellness coach only · Not medical advice
