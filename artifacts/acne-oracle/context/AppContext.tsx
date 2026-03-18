@@ -118,7 +118,7 @@ interface AppContextValue extends AppState {
 
 const AppContext = createContext<AppContextValue | null>(null);
 
-const STORAGE_KEY = "acneoracle_data_v4";
+const STORAGE_KEY = "acneoracle_data_v5";
 
 const DEFAULT_STATE: AppState = {
   hasSeenIntro: false,
