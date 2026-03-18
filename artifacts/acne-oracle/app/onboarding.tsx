@@ -4,7 +4,7 @@ import * as ImagePicker from "expo-image-picker";
 import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
-import React, { useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Dimensions,
   KeyboardAvoidingView,
@@ -19,8 +19,14 @@ import {
 import Animated, {
   FadeIn,
   FadeInDown,
+  FadeInLeft,
   SlideInRight,
   ZoomIn,
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -86,18 +92,107 @@ function ProgressBar({ step }: { step: number }) {
   );
 }
 
-function AiResponseCard({ text }: { text: string }) {
+function TypingDots() {
+  const dot1 = useSharedValue(0.3);
+  const dot2 = useSharedValue(0.3);
+  const dot3 = useSharedValue(0.3);
+
+  useEffect(() => {
+    const pulse = (sv: typeof dot1, delay: number) => {
+      sv.value = withRepeat(
+        withSequence(
+          withTiming(1, { duration: 350 }),
+          withTiming(0.3, { duration: 350 })
+        ),
+        -1,
+        false
+      );
+    };
+    setTimeout(() => pulse(dot1, 0), 0);
+    setTimeout(() => pulse(dot2, 0), 200);
+    setTimeout(() => pulse(dot3, 0), 400);
+  }, []);
+
+  const s1 = useAnimatedStyle(() => ({ opacity: dot1.value }));
+  const s2 = useAnimatedStyle(() => ({ opacity: dot2.value }));
+  const s3 = useAnimatedStyle(() => ({ opacity: dot3.value }));
+
   return (
-    <Animated.View entering={FadeInDown.delay(100).springify()} style={styles.aiCard}>
-      <View style={styles.aiAvatar}>
+    <View style={styles.typingDots}>
+      <Animated.View style={[styles.dot, s1]} />
+      <Animated.View style={[styles.dot, s2]} />
+      <Animated.View style={[styles.dot, s3]} />
+    </View>
+  );
+}
+
+function AiResponseCard({ text }: { text: string }) {
+  const words = text.split(" ");
+  const [visibleCount, setVisibleCount] = useState(0);
+  const [showDots, setShowDots] = useState(true);
+  const cursorOpacity = useSharedValue(1);
+
+  useEffect(() => {
+    setVisibleCount(0);
+    setShowDots(true);
+
+    // Brief "thinking" pause, then start typing
+    const startDelay = setTimeout(() => {
+      setShowDots(false);
+      let idx = 0;
+      const timer = setInterval(() => {
+        idx += 1;
+        setVisibleCount(idx);
+        if (idx >= words.length) {
+          clearInterval(timer);
+          setTimeout(() => { cursorOpacity.value = withTiming(0, { duration: 300 }); }, 800);
+        }
+      }, 55);
+      return () => clearInterval(timer);
+    }, 700);
+
+    return () => clearTimeout(startDelay);
+  }, [text]);
+
+  const cursorStyle = useAnimatedStyle(() => {
+    return { opacity: cursorOpacity.value };
+  });
+
+  useEffect(() => {
+    cursorOpacity.value = withRepeat(
+      withSequence(
+        withTiming(0, { duration: 420 }),
+        withTiming(1, { duration: 420 })
+      ),
+      -1,
+      true
+    );
+  }, []);
+
+  const displayedText = words.slice(0, visibleCount).join(" ");
+
+  return (
+    <Animated.View entering={FadeInDown.delay(80).springify()} style={styles.aiCard}>
+      <Animated.View entering={ZoomIn.delay(120).springify()} style={styles.aiAvatar}>
         <LinearGradient colors={["#FF6B6B", "#FF8E53"]} style={styles.aiAvatarGrad}>
           <Ionicons name="sparkles" size={16} color="#fff" />
         </LinearGradient>
-      </View>
-      <View style={styles.aiBubble}>
+      </Animated.View>
+
+      <Animated.View entering={FadeInLeft.delay(180).springify()} style={styles.aiBubble}>
         <Text style={styles.aiName}>AcneOracle</Text>
-        <Text style={styles.aiText}>{text}</Text>
-      </View>
+
+        {showDots ? (
+          <TypingDots />
+        ) : (
+          <View style={{ flexDirection: "row", flexWrap: "wrap", alignItems: "flex-end" }}>
+            <Text style={styles.aiText}>{displayedText}</Text>
+            {visibleCount < words.length ? (
+              <Animated.Text style={[styles.cursor, cursorStyle]}> |</Animated.Text>
+            ) : null}
+          </View>
+        )}
+      </Animated.View>
     </Animated.View>
   );
 }
@@ -846,8 +941,8 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 6,
     padding: 20,
     borderWidth: 1,
-    borderColor: C.cardBorder,
-    gap: 6,
+    borderColor: C.accent + "35",
+    gap: 8,
   },
   aiName: {
     fontFamily: "Inter_600SemiBold",
@@ -859,6 +954,24 @@ const styles = StyleSheet.create({
     fontSize: 17,
     color: C.text,
     lineHeight: 28,
+  },
+  cursor: {
+    fontFamily: "Inter_400Regular",
+    fontSize: 18,
+    color: C.accent,
+    lineHeight: 28,
+  },
+  typingDots: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 6,
+  },
+  dot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    backgroundColor: C.accent,
   },
   continueHint: {
     alignItems: "center",
