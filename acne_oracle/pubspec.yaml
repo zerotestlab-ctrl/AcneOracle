@@ -1,0 +1,70 @@
+name: acne_oracle
+description: Acne Oracle - Your AI-Powered Skin Journey
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State Management
+  flutter_riverpod: ^2.5.1
+  riverpod_annotation: ^2.3.5
+
+  # Navigation
+  go_router: ^14.2.7
+
+  # Backend
+  supabase_flutter: ^2.5.9
+
+  # Networking
+  dio: ^5.6.0
+  http: ^1.2.2
+
+  # UI
+  google_fonts: ^6.2.1
+  cached_network_image: ^3.3.1
+  fl_chart: ^0.68.0
+  smooth_page_indicator: ^1.1.0
+  flutter_animate: ^4.5.0
+  shimmer: ^3.0.0
+  lottie: ^3.1.2
+  percent_indicator: ^4.2.3
+
+  # Image
+  image_picker: ^1.1.2
+  camera: ^0.11.0+1
+
+  # Monetization
+  purchases_flutter: ^9.16.1
+
+  # Storage & Prefs
+  shared_preferences: ^2.3.2
+  flutter_secure_storage: ^9.2.2
+
+  # Utils
+  intl: ^0.19.0
+  uuid: ^4.4.2
+  path_provider: ^2.1.4
+
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^4.0.0
+  build_runner: ^2.4.11
+  riverpod_generator: ^2.4.3
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/lottie/
+
+  # fonts loaded via google_fonts package at runtime
