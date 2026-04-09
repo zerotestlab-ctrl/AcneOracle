@@ -40,3 +40,7 @@ Without real Supabase/API credentials the app builds and renders the UI, but log
 - The web platform is added via `flutter create --platforms=web .` if the `web/` directory is missing.
 - Asset directories (`assets/images/`, `assets/icons/`, `assets/lottie/`, `assets/fonts/`) contain placeholder files and must exist for the build to succeed.
 - RevenueCat monetization code is commented out in `main.dart`; no RevenueCat configuration is needed.
+- **Secrets must be populated with real values** from environment variables `SUPABASE_URL`, `SUPABASE_ANON_KEY`, and `GROK_API_KEY`. The update script copies the example file but does not inject real values. To write real secrets, replace the placeholder values in `secrets.dart` with the env var values.
+- **Supabase free-tier email rate limit** is very strict (~3–4 emails/hour). Registration attempts from automated testing can exhaust it quickly. Space out signup attempts or use a Supabase project with higher rate limits.
+- **Supabase `mailer_autoconfirm` is `false`** by default, meaning new accounts require email confirmation. For end-to-end testing, either enable autoconfirm in the Supabase dashboard or provide a pre-confirmed test account.
+- After updating `secrets.dart`, you must run `flutter clean && flutter pub get` and restart the dev server for the new credentials to take effect. Hot restart alone does not recompile constants baked into the web build.
