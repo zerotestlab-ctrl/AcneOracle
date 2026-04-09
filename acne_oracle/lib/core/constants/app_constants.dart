@@ -1,23 +1,17 @@
-// Environment variables - set these in your environment or .env file
-// SUPABASE_URL=https://your-project.supabase.co
-// SUPABASE_ANON_KEY=your-anon-key
-// GROK_API_KEY=your-grok-api-key
-// REVENUECAT_API_KEY_ANDROID=your-revenuecat-android-key
-// REVENUECAT_API_KEY_IOS=your-revenuecat-ios-key
+// Keys are loaded from lib/core/constants/secrets.dart (gitignored).
+// Copy secrets.dart.example to secrets.dart and fill in your values.
+import 'secrets.dart';
 
 class AppConstants {
   static const String appName = 'Acne Oracle';
   static const String packageName = 'com.acneoracle.app';
 
-  // Supabase
-  static const String supabaseUrl =
-      String.fromEnvironment('SUPABASE_URL', defaultValue: 'https://placeholder.supabase.co');
-  static const String supabaseAnonKey =
-      String.fromEnvironment('SUPABASE_ANON_KEY', defaultValue: 'placeholder-anon-key');
+  // Supabase — values come from secrets.dart
+  static const String supabaseUrl = Secrets.supabaseUrl;
+  static const String supabaseAnonKey = Secrets.supabaseAnonKey;
 
-  // AI APIs
-  static const String grokApiKey =
-      String.fromEnvironment('GROK_API_KEY', defaultValue: '');
+  // AI APIs — values come from secrets.dart
+  static const String grokApiKey = Secrets.grokApiKey;
   static const String openAiApiKey =
       String.fromEnvironment('OPENAI_API_KEY', defaultValue: '');
   static const String grokApiUrl = 'https://api.x.ai/v1';

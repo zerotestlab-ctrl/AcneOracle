@@ -109,15 +109,14 @@ A production-ready Flutter app that provides an advanced, AI-powered acne tracki
 4. Enable Email Auth in Authentication settings
 5. (Optional) Enable Google OAuth
 
-### 3. Environment Variables
+### 3. Configure Secrets
+
 ```bash
-flutter run \
-  --dart-define=SUPABASE_URL=https://your-project.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=your-anon-key \
-  --dart-define=GROK_API_KEY=your-grok-api-key \
-  --dart-define=REVENUECAT_API_KEY_ANDROID=your-rc-android-key \
-  --dart-define=REVENUECAT_API_KEY_IOS=your-rc-ios-key
+cp lib/core/constants/secrets.dart.example lib/core/constants/secrets.dart
+# Edit secrets.dart and fill in your Supabase URL, anon key, and Grok API key
 ```
+
+`secrets.dart` is gitignored and will never be committed. The example file shows the required structure.
 
 ### 4. Install Dependencies
 ```bash

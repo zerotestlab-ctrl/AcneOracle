@@ -1,15 +1,4 @@
 // Acne Oracle - Your AI-Powered Skin Journey
-//
-// Environment variables required:
-//   SUPABASE_URL       - Your Supabase project URL
-//   SUPABASE_ANON_KEY  - Your Supabase anon/public key
-//   GROK_API_KEY       - Grok API key (preferred) OR
-//   OPENAI_API_KEY     - OpenAI API key (fallback)
-//   REVENUECAT_API_KEY_ANDROID - RevenueCat Android API key
-//   REVENUECAT_API_KEY_IOS     - RevenueCat iOS API key
-//
-// Build with:
-//   flutter run --dart-define=SUPABASE_URL=xxx --dart-define=SUPABASE_ANON_KEY=yyy ...
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
